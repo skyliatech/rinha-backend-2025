@@ -104,5 +104,15 @@ namespace PaymentGateway.Common.Repository
 
             return summary;
         }
+
+        public Task<Payment> GetByCorrelationIdAsync(string correlationId, CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task UpdateStatusAsync(string correlationId, StatusPayment failed, CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
+        }
     }
 }
