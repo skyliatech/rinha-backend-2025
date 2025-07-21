@@ -1,7 +1,6 @@
 ﻿using Dapper;
 using Microsoft.Extensions.Configuration;
 using Npgsql;
-using PaymentGateway.Common.Enum;
 using PaymentGateway.Common.Model;
 using System.Data;
 

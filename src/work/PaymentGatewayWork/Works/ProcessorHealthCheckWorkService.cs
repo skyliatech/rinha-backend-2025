@@ -3,18 +3,18 @@ using StackExchange.Redis;
 
 namespace PaymentGatewayWork.Works
 {
-    public class ProcessorHealthCheckBackgroundService : BackgroundService
+    public class ProcessorHealthCheckWorkService : BackgroundService
     {
         private readonly IEnumerable<IProcessorHealthCheckApi> _healthCheckApis;
         private readonly IDatabase _redis;
-        private readonly ILogger<ProcessorHealthCheckBackgroundService> _logger;
+        private readonly ILogger<ProcessorHealthCheckWorkService> _logger;
         private static readonly TimeSpan Interval = TimeSpan.FromSeconds(3);
         private static readonly TimeSpan Ttl = TimeSpan.FromSeconds(5);
 
-        public ProcessorHealthCheckBackgroundService(
+        public ProcessorHealthCheckWorkService(
             IEnumerable<IProcessorHealthCheckApi> healthCheckApis,
             IConnectionMultiplexer redis,
-            ILogger<ProcessorHealthCheckBackgroundService> logger)
+            ILogger<ProcessorHealthCheckWorkService> logger)
         {
             _healthCheckApis = healthCheckApis;
             _redis = redis.GetDatabase();

@@ -31,7 +31,7 @@ builder.Services.AddSingleton<INatsPublisher, NatsPublisher>();
 
 builder.Services.AddHostedService<PaymentWorkerService>();
 builder.Services.AddHostedService<PaymentRetryWorkService>();
-builder.Services.AddHostedService<ProcessorHealthCheckBackgroundService>();
+builder.Services.AddHostedService<ProcessorHealthCheckWorkService>();
 
 
 var host = builder.Build();
