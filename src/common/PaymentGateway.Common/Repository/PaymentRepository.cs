@@ -1,9 +1,10 @@
 ﻿using Dapper;
 using Microsoft.Extensions.Configuration;
 using Npgsql;
+using PaymentGateway.Common.Enum;
 using PaymentGateway.Common.Model;
 using System.Data;
-using PaymentGateway.Common.Enum;
+
 
 namespace PaymentGateway.Common.Repository
 {
@@ -34,24 +35,19 @@ namespace PaymentGateway.Common.Repository
             await connection.ExecuteAsync(sql, payment);
         }
 
-        public async Task UpdateAfterProcessingAsync(string correlationId, ProcessorType processorUsed, StatusPayment status, CancellationToken cancellationToken = default)
+        public async Task UpdateEntityAsync(Payment payment, CancellationToken cancellationToken = default)
         {
             const string sql = @"
             UPDATE payments
-            SET processor_used = @ProcessorUsed,
+            SET amount = @Amount,
+                requested_at = @RequestedAt,
                 status = @Status,
-                processed = true,
-                processed_at = @ProcessedAt
+                processed_at = @ProcessedAt,
+                processed = @Processed,
+                total_attempts = @TotalAttempts
             WHERE correlation_id = @CorrelationId;";
-
             using var connection = CreateConnection();
-            await connection.ExecuteAsync(sql, new
-            {
-                CorrelationId = correlationId,
-                ProcessorUsed = processorUsed,
-                Status = (int)status,
-                ProcessedAt = DateTime.UtcNow
-            });
+            await connection.ExecuteAsync(sql, payment);
         }
 
         public async Task<PaymentsSummaryAggregate> GetSummaryAsync(DateTime? from, DateTime? to)
@@ -106,14 +102,54 @@ namespace PaymentGateway.Common.Repository
             return summary;
         }
 
-        public Task<Payment> GetByCorrelationIdAsync(string correlationId, CancellationToken cancellationToken)
+        public async Task<Payment?> GetByCorrelationIdAsync(string correlationId, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            const string sql = @"
+                SELECT 
+                    correlation_id AS CorrelationId,
+                    amount AS Amount,
+                    created_at AS CreatedAt,
+                    requested_at AS RequestedAt,
+                    processor_used AS ProcessorUsed,
+                    status AS Status,
+                    processed_at AS ProcessedAt,
+                    processed AS Processed,
+                    total_attempts AS TotalAttempts
+                FROM payments
+                WHERE correlation_id = @CorrelationId
+                LIMIT 1;";
+
+            using var connection = CreateConnection();
+            var payment = await connection.QueryFirstOrDefaultAsync<Payment>(
+                new CommandDefinition(sql, new { CorrelationId = correlationId }, cancellationToken: cancellationToken)
+            );
+            return payment;
         }
 
-        public Task UpdateStatusAsync(string correlationId, StatusPayment failed, CancellationToken cancellationToken)
+        public async Task<IEnumerable<Payment>?> GetPendingRetriesAsync(CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            const string sql = @"
+            SELECT 
+            id, 
+            correlation_id AS CorrelationId,
+            amount, 
+            requested_at AS RequestedAt,
+            processed_at AS ProcessedAt,
+            status AS Status,
+            processor_used AS ProcessorUsed,
+            processed, 
+            total_attempts AS TotalAttempts
+            FROM payments
+            WHERE status = @Status
+                AND total_attempts <= 5;
+            ";
+
+            using var connection = CreateConnection();
+            return await connection.QueryAsync<Payment>(sql, new
+            {
+                Status = StatusPayment.Failed
+            });
         }
+
     }
 }

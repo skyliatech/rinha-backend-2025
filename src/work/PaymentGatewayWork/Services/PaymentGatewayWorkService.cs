@@ -2,9 +2,7 @@
 using PaymentGateway.Common.MessageBroker.Contracts;
 using PaymentGateway.Common.Model;
 using PaymentGateway.Common.Repository;
-using PaymentGatewayWork.Rest;
-using PaymentGatewayWork.Rest.DefaultPayment;
-using PaymentGatewayWork.Rest.FallbackPayment;
+using PaymentGatewayWork.Rest.Base;
 
 
 namespace PaymentGatewayWork.Services
@@ -12,21 +10,20 @@ namespace PaymentGatewayWork.Services
     public class PaymentGatewayWorkService : IPaymentGatewayWorkService
     {
         private readonly ILogger<PaymentGatewayWorkService> _logger;
-        private readonly IDefaultPaymentProcessorApi _defaultProcessor;
-        private readonly IFallbackPaymentProcessorApi _fallbackProcessor;
+        private readonly IPaymentProcessorApi _defaultProcessor;
+        private readonly IPaymentProcessorApi _fallbackProcessor;
         private readonly IProcessorHealthService _healthService;
         private readonly IPaymentRepository _paymentRepository;
 
         public PaymentGatewayWorkService(
             ILogger<PaymentGatewayWorkService> logger,
-            IDefaultPaymentProcessorApi defaultProcessor,
-            IFallbackPaymentProcessorApi fallbackProcessor,
+            IEnumerable<IPaymentProcessorApi> processors,
             IProcessorHealthService healthService,
             IPaymentRepository paymentRepository)
         {
             _logger = logger;
-            _defaultProcessor = defaultProcessor;
-            _fallbackProcessor = fallbackProcessor;
+            _defaultProcessor = processors.First(p => p.Processor == ProcessorType.Default);
+            _fallbackProcessor = processors.First(p => p.Processor == ProcessorType.Fallback);
             _healthService = healthService;
             _paymentRepository = paymentRepository;
         }
@@ -43,7 +40,7 @@ namespace PaymentGatewayWork.Services
 
             if (payment.Status !=  StatusPayment.Pending)
             {
-                _logger.LogInformation("Pagamento {CorrelationId} já está em status {Status}, não será reprocessado.", payment.CorrelationId, payment.Status);
+                _logger.LogInformation("Pagamento {CorrelationId} já está em status {Status}, não será reprocessado nesse fluxo.", payment.CorrelationId, payment.Status);
                 return;
             }
 
@@ -60,12 +57,9 @@ namespace PaymentGatewayWork.Services
             if (processorToUse is null)
             {
                 _logger.LogWarning("Nenhum processador disponível. Pagamento {CorrelationId} marcado como FAILED.", payment.CorrelationId);
-                await _paymentRepository.UpdateAfterProcessingAsync(
-                    message.CorrelationId, 
-                    ProcessorType.Unknown,
-                    StatusPayment.Failed, 
-                    cancellationToken);
-                
+                payment.SetUpdatedPayment(ProcessorType.Unknown, StatusPayment.Failed);
+                await _paymentRepository.UpdateEntityAsync(payment, cancellationToken);
+
                 return;
             }
 
@@ -73,21 +67,15 @@ namespace PaymentGatewayWork.Services
             {
                 var success = await processorToUse.ProcessAsync(payment, cancellationToken);
                 var finalStatus = success ? StatusPayment.Approved : StatusPayment.Failed;
-                
-                await _paymentRepository.UpdateAfterProcessingAsync(
-                    message.CorrelationId, 
-                    processorToUse.Processor,
-                    finalStatus, 
-                    cancellationToken);
+                payment.SetUpdatedPayment(processorToUse.Processor, finalStatus);
+                await _paymentRepository.UpdateEntityAsync(payment, cancellationToken);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Erro ao processar pagamento {CorrelationId}", payment.CorrelationId);
-                await _paymentRepository.UpdateAfterProcessingAsync(
-                    message.CorrelationId, 
-                    processorToUse.Processor, 
-                    StatusPayment.Failed,
-                    cancellationToken);
+                payment.SetUpdatedPayment(processorToUse.Processor, StatusPayment.Failed);
+                await _paymentRepository.UpdateEntityAsync(payment, cancellationToken);
+               
             }
         }
     }

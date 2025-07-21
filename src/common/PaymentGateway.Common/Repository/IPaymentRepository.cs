@@ -6,10 +6,10 @@ namespace PaymentGateway.Common.Repository
     public interface IPaymentRepository
     {
         Task InsertAsync(Payment payment);
-        Task UpdateAfterProcessingAsync(string correlationId, ProcessorType processorUsed, StatusPayment status, CancellationToken cancellationToken);
         Task<PaymentsSummaryAggregate> GetSummaryAsync(DateTime? from, DateTime? to);
-        Task<Payment> GetByCorrelationIdAsync(string correlationId, CancellationToken cancellationToken);
-        Task UpdateStatusAsync(string correlationId, StatusPayment statusPayment, CancellationToken cancellationToken);
+        Task<Payment?> GetByCorrelationIdAsync(string correlationId, CancellationToken cancellationToken);
+        Task UpdateEntityAsync(Payment payment, CancellationToken cancellationToken = default);
+        Task<IEnumerable<Payment>?> GetPendingRetriesAsync(CancellationToken stoppingToken);
     }
 
 }

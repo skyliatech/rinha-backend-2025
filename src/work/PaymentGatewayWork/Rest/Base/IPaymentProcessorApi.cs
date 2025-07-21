@@ -2,7 +2,7 @@
 using PaymentGateway.Common.Model;
 
 
-namespace PaymentGatewayWork.Rest
+namespace PaymentGatewayWork.Rest.Base
 {
     public interface IPaymentProcessorApi
     {
