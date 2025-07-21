@@ -3,6 +3,7 @@ using Microsoft.Extensions.Configuration;
 using Npgsql;
 using PaymentGateway.Common.Model;
 using System.Data;
+using PaymentGateway.Common.Enum;
 
 namespace PaymentGateway.Common.Repository
 {
@@ -33,7 +34,7 @@ namespace PaymentGateway.Common.Repository
             await connection.ExecuteAsync(sql, payment);
         }
 
-        public async Task UpdateAfterProcessingAsync(string correlationId, string processorUsed, StatusPayment status)
+        public async Task UpdateAfterProcessingAsync(string correlationId, ProcessorType processorUsed, StatusPayment status, CancellationToken cancellationToken = default)
         {
             const string sql = @"
             UPDATE payments

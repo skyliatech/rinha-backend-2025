@@ -1,11 +1,12 @@
-﻿using PaymentGateway.Common.Model;
+﻿using PaymentGateway.Common.Enum;
+using PaymentGateway.Common.Model;
 
 
 namespace PaymentGatewayWork.Rest
 {
     public interface IPaymentProcessorApi
     {
-        string Name { get; }
+        ProcessorType Processor { get; }
         Task<bool> ProcessAsync(Payment payment, CancellationToken cancellationToken = default);
     }
 }

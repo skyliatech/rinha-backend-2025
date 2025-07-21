@@ -1,4 +1,6 @@
-﻿namespace PaymentGateway.Common.Model
+﻿using PaymentGateway.Common.Enum;
+
+namespace PaymentGateway.Common.Model
 {
     public class Payment
     {
@@ -6,7 +8,7 @@
         public decimal Amount { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime RequestedAt { get; set; }
-        public string ProcessorUsed { get; set; }
+        public ProcessorType ProcessorUsed { get; set; }
         public StatusPayment Status { get; set; }
         public DateTime? ProcessedAt { get; set; }
         public bool Processed { get; set; }
@@ -21,7 +23,7 @@
             Processed = false;
         }
 
-        public void WorkAsProcessed(string processorUsed, StatusPayment status)
+        public void WorkAsProcessed(ProcessorType processorUsed, StatusPayment status)
         {
             ProcessorUsed = processorUsed;
             Status = status;
@@ -37,4 +39,6 @@
         Approved = 1,
         Failed = 2
     }
+
+    
 }

@@ -1,4 +1,4 @@
-﻿using PaymentGatewayWork.Enum;
+﻿using PaymentGateway.Common.Enum;
 using StackExchange.Redis;
 
 

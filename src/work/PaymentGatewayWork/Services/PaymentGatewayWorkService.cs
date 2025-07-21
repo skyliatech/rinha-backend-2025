@@ -1,7 +1,7 @@
-﻿using PaymentGateway.Common.MessageBroker.Contracts;
+﻿using PaymentGateway.Common.Enum;
+using PaymentGateway.Common.MessageBroker.Contracts;
 using PaymentGateway.Common.Model;
 using PaymentGateway.Common.Repository;
-using PaymentGatewayWork.Enum;
 using PaymentGatewayWork.Rest;
 using PaymentGatewayWork.Rest.DefaultPayment;
 using PaymentGatewayWork.Rest.FallbackPayment;
@@ -60,7 +60,12 @@ namespace PaymentGatewayWork.Services
             if (processorToUse is null)
             {
                 _logger.LogWarning("Nenhum processador disponível. Pagamento {CorrelationId} marcado como FAILED.", payment.CorrelationId);
-                await _paymentRepository.UpdateStatusAsync(payment.CorrelationId, StatusPayment.Failed, cancellationToken);
+                await _paymentRepository.UpdateAfterProcessingAsync(
+                    message.CorrelationId, 
+                    ProcessorType.Unknown,
+                    StatusPayment.Failed, 
+                    cancellationToken);
+                
                 return;
             }
 
@@ -68,13 +73,21 @@ namespace PaymentGatewayWork.Services
             {
                 var success = await processorToUse.ProcessAsync(payment, cancellationToken);
                 var finalStatus = success ? StatusPayment.Approved : StatusPayment.Failed;
-
-                await _paymentRepository.UpdateStatusAsync(payment.CorrelationId, finalStatus, cancellationToken);
+                
+                await _paymentRepository.UpdateAfterProcessingAsync(
+                    message.CorrelationId, 
+                    processorToUse.Processor,
+                    finalStatus, 
+                    cancellationToken);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Erro ao processar pagamento {CorrelationId}", payment.CorrelationId);
-                await _paymentRepository.UpdateStatusAsync(payment.CorrelationId, StatusPayment.Failed, cancellationToken);
+                await _paymentRepository.UpdateAfterProcessingAsync(
+                    message.CorrelationId, 
+                    processorToUse.Processor, 
+                    StatusPayment.Failed,
+                    cancellationToken);
             }
         }
     }
