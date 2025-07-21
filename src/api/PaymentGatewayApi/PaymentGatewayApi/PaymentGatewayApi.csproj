@@ -9,6 +9,8 @@
 
     <ItemGroup>
         <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.3" />
+        <PackageReference Include="Swashbuckle.AspNetCore" Version="9.0.3" />
+        <PackageReference Include="Swashbuckle.AspNetCore.ReDoc" Version="9.0.3" />
     </ItemGroup>
 
     <ItemGroup>
@@ -19,7 +21,6 @@
 
     <ItemGroup>
       <ProjectReference Include="..\..\..\common\PaymentGateway.Common\PaymentGateway.Common.csproj" />
-      <ProjectReference Include="..\PaymentGateway.Common\PaymentGateway.Common.csproj" />
     </ItemGroup>
 
 </Project>
