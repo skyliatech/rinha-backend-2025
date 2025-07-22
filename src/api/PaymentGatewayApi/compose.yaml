@@ -1,7 +1,0 @@
-﻿services:
-  paymentgatewayapi:
-    image: paymentgatewayapi
-    build:
-      context: .
-      dockerfile: PaymentGatewayApi/Dockerfile
-
