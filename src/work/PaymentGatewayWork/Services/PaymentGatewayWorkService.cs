@@ -1,4 +1,5 @@
-﻿using PaymentGateway.Common.Enum;
+﻿using Npgsql;
+using PaymentGateway.Common.Enum;
 using PaymentGateway.Common.MessageBroker.Contracts;
 using PaymentGateway.Common.Model;
 using PaymentGateway.Common.Repository;
@@ -29,20 +30,17 @@ namespace PaymentGatewayWork.Services
         }
         public async Task HandleAsync(PaymentRequestedMessage message, CancellationToken cancellationToken = default)
         {
-           
-            var payment = await _paymentRepository.GetByCorrelationIdAsync(message.CorrelationId, cancellationToken);
+            var payment = new Payment(message.CorrelationId, message.Amount, DateTime.UtcNow);
 
-            if (payment is null)
+            try
             {
-                _logger.LogWarning("Pagamento {CorrelationId} não encontrado no banco.", message.CorrelationId);
-                return;
+                await _paymentRepository.InsertAsync(payment);
+            }
+            catch (PostgresException ex) when (ex.SqlState == "23505")
+            {
+                return; // Ignora a inserção se o pagamento já existir
             }
 
-            if (payment.Status !=  StatusPayment.Pending)
-            {
-                _logger.LogInformation("Pagamento {CorrelationId} já está em status {Status}, não será reprocessado nesse fluxo.", payment.CorrelationId, payment.Status);
-                return;
-            }
 
             var defaultAvailable = await _healthService.IsProcessorAvailableAsync(ProcessorType.Default);
             var fallbackAvailable = await _healthService.IsProcessorAvailableAsync(ProcessorType.Fallback);
@@ -59,7 +57,6 @@ namespace PaymentGatewayWork.Services
                 _logger.LogWarning("Nenhum processador disponível. Pagamento {CorrelationId} marcado como FAILED.", payment.CorrelationId);
                 payment.SetUpdatedPayment(ProcessorType.Unknown, StatusPayment.Failed);
                 await _paymentRepository.UpdateEntityAsync(payment, cancellationToken);
-
                 return;
             }
 

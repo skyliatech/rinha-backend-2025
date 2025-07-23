@@ -12,7 +12,7 @@ string urlPaymentFallback = "http://payment-processor-fallback:8080";
 
 var builder = Host.CreateApplicationBuilder(args);
 builder.Logging.ClearProviders();
-builder.Logging.AddConsole().SetMinimumLevel(LogLevel.Debug);
+builder.Logging.AddConsole().SetMinimumLevel(LogLevel.Error);
 
 
 builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>

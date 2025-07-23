@@ -57,7 +57,7 @@ services:
         condition: service_started
     environment:
       - DOTNET_ENVIRONMENT=Production
-      - ConnectionStrings__Postgres=Host=db;Port=5432;Username=admin;Password=rinha@123;Database=PaymentDB
+      - ConnectionStrings__Postgres=Host=db;Port=5432;Username=admin;Password=rinha@123;Database=PaymentDB;MaxPoolSize=300
     networks:
       - backend
       - payment-processor
@@ -88,8 +88,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.30"
-          memory: "96MB"
+          cpus: "0.60"
+          memory: "150MB"
 
   # Redis para cache
   redis:
