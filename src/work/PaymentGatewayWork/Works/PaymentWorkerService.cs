@@ -21,7 +21,7 @@ namespace PaymentGatewayWork.Works
             _paymentGatewayWorkService = paymentGatewayWorkService;
         }
 
-        protected override Task ExecuteAsync(CancellationToken stoppingToken)
+        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             _logger.LogInformation("Worker iniciado. Inscrevendo no tópico 'payment.requested'...");
 
@@ -29,6 +29,8 @@ namespace PaymentGatewayWork.Works
             {
                 try
                 {
+                    _logger.LogInformation("Mensagem recebida: {CorrelationId}, {Amount}, {RequestedAt}", 
+                        message.CorrelationId, message.Amount, message.RequestedAt);
                     await _paymentGatewayWorkService.HandleAsync(message, stoppingToken);
                 }
                 catch (Exception ex)
@@ -37,7 +39,7 @@ namespace PaymentGatewayWork.Works
                 }
             });
 
-            return Task.CompletedTask;
+            await Task.Delay(Timeout.Infinite, stoppingToken);
         }
     }
 

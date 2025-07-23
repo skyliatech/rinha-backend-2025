@@ -1,5 +1,4 @@
-﻿using PaymentGateway.Common.Enum;
-using PaymentGateway.Common.Model;
+﻿using PaymentGateway.Common.Model;
 
 namespace PaymentGateway.Common.Repository
 {

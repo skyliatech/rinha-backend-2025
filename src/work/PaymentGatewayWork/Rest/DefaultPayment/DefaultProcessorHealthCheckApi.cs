@@ -7,8 +7,8 @@ namespace PaymentGatewayWork.Rest.DefaultPayment
     {
         public override ProcessorType Type => ProcessorType.Default;
 
-        public DefaultProcessorHealthCheckApi(HttpClient httpClient)
-            : base(httpClient)
+        public DefaultProcessorHealthCheckApi(IHttpClientFactory httpClientFactory, ILogger<BaseProcessorHealthCheckApi> logger)
+            : base(httpClientFactory, nameof(DefaultProcessorHealthCheckApi), logger)
         {
         }
     }

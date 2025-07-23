@@ -14,6 +14,11 @@ namespace PaymentGateway.Common.Model
         public bool Processed { get; set; }
         public int TotalAttempts { get; set; } = 0;
 
+        public Payment()
+        {
+            
+        }
+
         public Payment(string correlationId, decimal amount, DateTime requestedAt)
         {
             CorrelationId = correlationId;

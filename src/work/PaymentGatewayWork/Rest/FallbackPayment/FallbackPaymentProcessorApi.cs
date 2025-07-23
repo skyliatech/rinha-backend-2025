@@ -8,6 +8,7 @@ namespace PaymentGatewayWork.Rest.FallbackPayment
     {
         public override ProcessorType Processor => ProcessorType.Fallback;
 
-        public FallbackPaymentProcessorApi(HttpClient httpClient) : base(httpClient) { }
+        public FallbackPaymentProcessorApi(IHttpClientFactory httpClientFactory, ILogger<BasePaymentProcessorApi> logger) 
+            : base(httpClientFactory, nameof(FallbackPaymentProcessorApi), logger) { }
     }
 }

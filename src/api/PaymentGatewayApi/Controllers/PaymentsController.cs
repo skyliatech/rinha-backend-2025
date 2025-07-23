@@ -6,7 +6,6 @@ using PaymentGatewayApi.Services;
 namespace PaymentGatewayApi.Controllers;
 
 [ApiController]
-[Route("[controller]")]
 public class PaymentsController: ControllerBase
 {
     private readonly IPaymentGatewayService _paymentGatewayService;
@@ -15,7 +14,7 @@ public class PaymentsController: ControllerBase
         _paymentGatewayService = paymentGatewayService;
     }
 
-    [HttpPost]
+    [HttpPost("/payments")]
     public async Task<IActionResult> SendPaymentAsync([FromBody] PaymentRequest request)
     {
         if (!ModelState.IsValid)
@@ -32,11 +31,10 @@ public class PaymentsController: ControllerBase
         return StatusCode(500, "An error occurred while processing the payment.");
     }
 
-    [HttpGet("payments-summary")]
-    public async Task<IActionResult> GetPaymentsSummaryAsync([FromQuery] DateTime from, [FromQuery] DateTime to)
+    [HttpGet("/payments-summary")]
+    public async Task<IActionResult> GetPaymentsSummaryAsync([FromQuery] DateTimeOffset from, [FromQuery] DateTimeOffset to)
     {
-       PaymentsSummaryResponse paymentsSummaryResponse = await _paymentGatewayService.GetPaymentsSummaryAsync(from, to);
-
+       PaymentsSummaryResponse paymentsSummaryResponse = await _paymentGatewayService.GetPaymentsSummaryAsync(from.UtcDateTime, to.UtcDateTime);
        return Ok(paymentsSummaryResponse);
     }
 }

@@ -1,6 +1,8 @@
 ﻿using Dapper;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Npgsql;
+using PaymentGateway.Common.Constants;
 using PaymentGateway.Common.Model;
 using System.Data;
 
@@ -9,11 +11,13 @@ namespace PaymentGateway.Common.Repository
 {
     public class PaymentRepository : IPaymentRepository
     {
+        private readonly ILogger<PaymentRepository> _logger;
         private readonly string _connectionString;
-
-        public PaymentRepository(IConfiguration configuration)
+        
+        public PaymentRepository(ILogger<PaymentRepository> logger, IConfiguration configuration)
         {
-            _connectionString = configuration.GetConnectionString("DefaultConnection");
+            _logger = logger;
+            _connectionString = configuration.GetConnectionString("Postgres");
         }
 
         private IDbConnection CreateConnection() => new NpgsqlConnection(_connectionString);
@@ -43,6 +47,7 @@ namespace PaymentGateway.Common.Repository
                 status = @Status,
                 processed_at = @ProcessedAt,
                 processed = @Processed,
+                processor_used = @ProcessorUsed,
                 total_attempts = @TotalAttempts
             WHERE correlation_id = @CorrelationId;";
             using var connection = CreateConnection();
@@ -64,7 +69,7 @@ namespace PaymentGateway.Common.Repository
 
             var whereClause = string.Join(" AND ", filters);
 
-            const string sql = @"
+            string sql = @"
             SELECT processor_used AS Processor,
                    COUNT(*) AS TotalRequests,
                    SUM(amount) AS TotalAmount
@@ -72,26 +77,41 @@ namespace PaymentGateway.Common.Repository
             WHERE " + "{where}" + @"
             GROUP BY processor_used;";
 
+            string sqlComplete = sql.Replace("{where}", whereClause);
+
             using var connection = CreateConnection();
             var result = await connection.QueryAsync<(string Processor, int TotalRequests, decimal TotalAmount)>(
-                sql.Replace("{where}", whereClause),
+                sqlComplete,
                 new
                 {
-                    From = from,
-                    To = to,
-                    Approved = (int)StatusPayment.Approved
+                    From = from?.ToUniversalTime(),
+                    To = to?.ToUniversalTime(),
+                    Approved = StatusPayment.Approved.ToString("D")
                 });
 
-            var summary = new PaymentsSummaryAggregate();
+            
+
+            if (result is null || !result.Any())
+            {
+                return new PaymentsSummaryAggregate();
+            }
+
+            _logger.LogInformation("Query resultado {Count} linhas", result.Count());
+
+            var summary = new PaymentsSummaryAggregate
+            {
+                Default = new Default(),
+                Fallback = new Fallback()
+            };
 
             foreach (var row in result)
             {
-                if (row.Processor == "default")
+                if (row.Processor == ProcessorCodes.Default)
                 {
                     summary.Default.TotalRequests = row.TotalRequests;
                     summary.Default.TotalAmount = row.TotalAmount;
                 }
-                else if (row.Processor == "fallback")
+                else if (row.Processor == ProcessorCodes.Fallback)
                 {
                     summary.Fallback.TotalRequests = row.TotalRequests;
                     summary.Fallback.TotalAmount = row.TotalAmount;
@@ -129,7 +149,6 @@ namespace PaymentGateway.Common.Repository
         {
             const string sql = @"
             SELECT 
-            id, 
             correlation_id AS CorrelationId,
             amount, 
             requested_at AS RequestedAt,
@@ -146,7 +165,7 @@ namespace PaymentGateway.Common.Repository
             using var connection = CreateConnection();
             return await connection.QueryAsync<Payment>(sql, new
             {
-                Status = StatusPayment.Failed
+                Status = StatusPayment.Failed.ToString("D")
             });
         }
 

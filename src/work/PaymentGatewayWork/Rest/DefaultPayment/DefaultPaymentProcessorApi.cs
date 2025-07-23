@@ -7,6 +7,7 @@ namespace PaymentGatewayWork.Rest.DefaultPayment
     {
         public override ProcessorType Processor => ProcessorType.Default;
 
-        public DefaultPaymentProcessorApi(HttpClient httpClient) : base(httpClient) { }
+        public DefaultPaymentProcessorApi(IHttpClientFactory httpClientFactory, ILogger<BasePaymentProcessorApi> logger) 
+            : base(httpClientFactory, nameof(DefaultPaymentProcessorApi), logger) { }
     }
 }

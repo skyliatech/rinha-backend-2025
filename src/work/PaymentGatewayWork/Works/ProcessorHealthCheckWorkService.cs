@@ -8,7 +8,7 @@ namespace PaymentGatewayWork.Works
         private readonly IEnumerable<IProcessorHealthCheckApi> _healthCheckApis;
         private readonly IDatabase _redis;
         private readonly ILogger<ProcessorHealthCheckWorkService> _logger;
-        private static readonly TimeSpan Interval = TimeSpan.FromSeconds(3);
+        private static readonly TimeSpan Interval = TimeSpan.FromSeconds(6);
         private static readonly TimeSpan Ttl = TimeSpan.FromSeconds(5);
 
         public ProcessorHealthCheckWorkService(
@@ -23,12 +23,15 @@ namespace PaymentGatewayWork.Works
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
+            _logger.LogInformation("Serviço de verificação de saúde dos processadores iniciado.");
+
             while (!stoppingToken.IsCancellationRequested)
             {
                 foreach (var api in _healthCheckApis)
                 {
                     try
                     {
+
                         var isHealthy = await api.IsHealthyAsync(stoppingToken);
                         var key = $"health:processor:{api.Type.ToString().ToLower()}";
 

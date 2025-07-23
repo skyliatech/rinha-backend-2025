@@ -30,6 +30,8 @@ namespace PaymentGatewayWork.Works
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
+            _logger.LogInformation("Serviço de reprocessamento de pagamentos iniciado.");
+
             while (!stoppingToken.IsCancellationRequested)
             {
                 var payments = await _paymentRepository.GetPendingRetriesAsync(stoppingToken);
@@ -39,6 +41,8 @@ namespace PaymentGatewayWork.Works
                     await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
                     continue;
                 }
+
+                _logger.LogInformation("Reprocessando {Count} pagamentos pendentes.", payments.Count());
 
                 foreach (var payment in payments)
                 {
