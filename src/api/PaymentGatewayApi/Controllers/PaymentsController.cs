@@ -37,4 +37,12 @@ public class PaymentsController: ControllerBase
        PaymentsSummaryResponse paymentsSummaryResponse = await _paymentGatewayService.GetPaymentsSummaryAsync(from.UtcDateTime, to.UtcDateTime);
        return Ok(paymentsSummaryResponse);
     }
+
+    [HttpDelete("/payments")]
+    public async Task<IActionResult> DeletePaymentsAsync()
+    {
+
+        await _paymentGatewayService.DeleteAllAsync();
+        return NoContent();
+    }
 }

@@ -27,32 +27,42 @@ namespace PaymentGatewayWork.Works
 
             while (!stoppingToken.IsCancellationRequested)
             {
-                foreach (var api in _healthCheckApis)
+                try
                 {
-                    try
+                    foreach (var api in _healthCheckApis)
                     {
-
-                        var isHealthy = await api.IsHealthyAsync(stoppingToken);
-                        var key = $"health:processor:{api.Type.ToString().ToLower()}";
-
-                        if (isHealthy)
+                        try
                         {
-                            await _redis.StringSetAsync(key, "healthy", Ttl);
-                            _logger.LogDebug("Processador {Type} está saudável.", api.Type);
+
+                            var isHealthy = await api.IsHealthyAsync(stoppingToken);
+                            var key = $"health:processor:{api.Type.ToString().ToLower()}";
+
+                            if (isHealthy)
+                            {
+                                await _redis.StringSetAsync(key, "healthy", Ttl);
+                                _logger.LogDebug("Processador {Type} está saudável.", api.Type);
+                            }
+                            else
+                            {
+                                await _redis.KeyDeleteAsync(key);
+                                _logger.LogWarning("Processador {Type} está indisponível.", api.Type);
+                            }
                         }
-                        else
+                        catch (Exception ex)
                         {
-                            await _redis.KeyDeleteAsync(key);
-                            _logger.LogWarning("Processador {Type} está indisponível.", api.Type);
+                            _logger.LogError(ex, "Erro ao validar saúde do processador {Type}", api.Type);
                         }
                     }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, "Erro ao validar saúde do processador {Type}", api.Type);
-                    }
+
+                    await Task.Delay(Interval, stoppingToken);
+                }
+                catch (Exception ex)
+                {
+
+                    _logger.LogError(ex, "Erro ao executar o serviço de verificação de saúde dos processadores.");
+
                 }
 
-                await Task.Delay(Interval, stoppingToken);
             }
         }
     }

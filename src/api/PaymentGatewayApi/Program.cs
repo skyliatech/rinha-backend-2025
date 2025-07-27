@@ -46,7 +46,7 @@ builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 
 builder.Services.AddSingleton<INatsPublisher, NatsPublisher>();
-builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
+builder.Services.AddSingleton<IPaymentRepository, PaymentRepository>();
 builder.Services.AddScoped<IPaymentGatewayService, PaymentGatewayService>();
 
 

@@ -169,5 +169,11 @@ namespace PaymentGateway.Common.Repository
             });
         }
 
+        public async Task DeleteAllAsync()
+        {
+            const string sql = "DELETE FROM payments;";
+            using var connection = CreateConnection();
+            await connection.ExecuteAsync(sql);
+        }
     }
 }

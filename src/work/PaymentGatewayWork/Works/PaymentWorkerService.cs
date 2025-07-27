@@ -25,7 +25,7 @@ namespace PaymentGatewayWork.Works
         {
             _logger.LogInformation("Worker iniciado. Inscrevendo no tópico 'payment.requested'...");
 
-            _natsSubscriber.Subscribe<PaymentRequestedMessage>("payment.requested", async message =>
+            _natsSubscriber.SubscribeSync<PaymentRequestedMessage>("payment.requested", async message =>
             {
                 try
                 {
@@ -37,7 +37,7 @@ namespace PaymentGatewayWork.Works
                 {
                     _logger.LogError(ex, "Erro ao processar mensagem PaymentRequestedMessage.");
                 }
-            });
+            }, stoppingToken);
 
             await Task.Delay(Timeout.Infinite, stoppingToken);
         }

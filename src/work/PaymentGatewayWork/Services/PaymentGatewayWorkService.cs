@@ -42,37 +42,48 @@ namespace PaymentGatewayWork.Services
             }
 
 
-            var defaultAvailable = await _healthService.IsProcessorAvailableAsync(ProcessorType.Default);
-            var fallbackAvailable = await _healthService.IsProcessorAvailableAsync(ProcessorType.Fallback);
+            //var defaultAvailable = await _healthService.IsProcessorAvailableAsync(ProcessorType.Default);
+            //var fallbackAvailable = await _healthService.IsProcessorAvailableAsync(ProcessorType.Fallback);
 
-            IPaymentProcessorApi? processorToUse = null;
+            //IPaymentProcessorApi? processorToUse = null;
 
-            if (defaultAvailable)
-                processorToUse = _defaultProcessor;
-            else if (fallbackAvailable)
-                processorToUse = _fallbackProcessor;
+            //if (defaultAvailable)
+            //    processorToUse = _defaultProcessor;
+            //else if (fallbackAvailable)
+            //    processorToUse = _fallbackProcessor;
 
-            if (processorToUse is null)
-            {
-                _logger.LogWarning("Nenhum processador disponível. Pagamento {CorrelationId} marcado como FAILED.", payment.CorrelationId);
-                payment.SetUpdatedPayment(ProcessorType.Unknown, StatusPayment.Failed);
-                await _paymentRepository.UpdateEntityAsync(payment, cancellationToken);
-                return;
-            }
+            //if (processorToUse is null)
+            //{
+            //    _logger.LogWarning("Nenhum processador disponível. Pagamento {CorrelationId} marcado como FAILED.", payment.CorrelationId);
+            //    payment.SetUpdatedPayment(ProcessorType.Unknown, StatusPayment.Failed);
+            //    await _paymentRepository.UpdateEntityAsync(payment, cancellationToken);
+            //    return;
+            //}
 
             try
             {
-                var success = await processorToUse.ProcessAsync(payment, cancellationToken);
-                var finalStatus = success ? StatusPayment.Approved : StatusPayment.Failed;
-                payment.SetUpdatedPayment(processorToUse.Processor, finalStatus);
-                await _paymentRepository.UpdateEntityAsync(payment, cancellationToken);
+                var success = await _defaultProcessor.ProcessAsync(payment, cancellationToken);
+                if (success)
+                {
+                    var finalStatus = StatusPayment.Approved;
+                    payment.SetUpdatedPayment(_defaultProcessor.Processor, finalStatus);
+                    await _paymentRepository.UpdateEntityAsync(payment, cancellationToken);
+                }
+                else
+                {
+                    var successFallback = await _fallbackProcessor.ProcessAsync(payment, cancellationToken);
+                    var finalStatus = success ? StatusPayment.Approved : StatusPayment.Failed;
+                    payment.SetUpdatedPayment(_fallbackProcessor.Processor, finalStatus);
+                    await _paymentRepository.UpdateEntityAsync(payment, cancellationToken);
+                }
+
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Erro ao processar pagamento {CorrelationId}", payment.CorrelationId);
-                payment.SetUpdatedPayment(processorToUse.Processor, StatusPayment.Failed);
+                payment.SetUpdatedPayment(_defaultProcessor.Processor, StatusPayment.Failed);
                 await _paymentRepository.UpdateEntityAsync(payment, cancellationToken);
-               
+
             }
         }
     }

@@ -23,8 +23,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.25"
-          memory: "52MB"
+          cpus: "1"
+          memory: "100MB"
 
   # API - Instância 2
   api02:
@@ -42,8 +42,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.25"
-          memory: "52MB"
+          cpus: "1"
+          memory: "100MB"
 
   # Worker responsável por processar os pagamentos
   payment-worker:
@@ -64,8 +64,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.30"
-          memory: "60MB"
+          cpus: "1.5"
+          memory: "350MB"
 
   # Banco de dados PostgreSQL
   db:
@@ -88,8 +88,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.60"
-          memory: "150MB"
+          cpus: "3.50"
+          memory: "500MB"
 
   # Redis para cache
   redis:
@@ -101,8 +101,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.10"
-          memory: "30MB"
+          cpus: "0.60"
+          memory: "50MB"
 
   # NATS para mensageria entre serviços
   nats:
@@ -114,8 +114,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.10"
-          memory: "30MB"
+          cpus: "0.80"
+          memory: "60MB"
 
   # NGINX para balanceamento de carga entre api01 e api02
   nginx:
@@ -132,5 +132,5 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.10"
-          memory: "30MB"
+          cpus: "0.80"
+          memory: "50MB"

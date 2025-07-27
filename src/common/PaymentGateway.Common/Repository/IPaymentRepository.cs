@@ -9,6 +9,7 @@ namespace PaymentGateway.Common.Repository
         Task<Payment?> GetByCorrelationIdAsync(string correlationId, CancellationToken cancellationToken);
         Task UpdateEntityAsync(Payment payment, CancellationToken cancellationToken = default);
         Task<IEnumerable<Payment>?> GetPendingRetriesAsync(CancellationToken stoppingToken);
+        Task DeleteAllAsync();
     }
 
 }

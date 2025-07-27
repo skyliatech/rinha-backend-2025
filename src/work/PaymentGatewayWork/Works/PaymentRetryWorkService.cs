@@ -34,51 +34,58 @@ namespace PaymentGatewayWork.Works
 
             while (!stoppingToken.IsCancellationRequested)
             {
-                var payments = await _paymentRepository.GetPendingRetriesAsync(stoppingToken);
-
-                if(payments?.Count() == 0)
+                try
                 {
-                    await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
-                    continue;
-                }
+                    var payments = await _paymentRepository.GetPendingRetriesAsync(stoppingToken);
 
-                _logger.LogInformation("Reprocessando {Count} pagamentos pendentes.", payments.Count());
-
-                foreach (var payment in payments)
-                {
-
-                    var defaultAvailable = await _healthService.IsProcessorAvailableAsync(ProcessorType.Default, stoppingToken);
-                    var fallbackAvailable = await _healthService.IsProcessorAvailableAsync(ProcessorType.Fallback, stoppingToken);
-
-                    IPaymentProcessorApi? processor = null;
-
-                    if (defaultAvailable)
-                        processor = _defaultProcessor;
-                    else if (fallbackAvailable)
-                        processor = _fallbackProcessor;
-
-                    if (processor is null)
+                    if (payments?.Count() == 0)
                     {
-                        _logger.LogWarning("Nenhum processador disponível para reprocessar {CorrelationId}. Tentaremos novamente depois.", payment.CorrelationId);
+                        await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
                         continue;
                     }
 
-                    try
-                    {
-                        var success = await processor.ProcessAsync(payment, stoppingToken);
-                        var status = success ? StatusPayment.Approved : StatusPayment.Failed;
+                    _logger.LogInformation("Reprocessando {Count} pagamentos pendentes.", payments.Count());
 
-                        payment.SetUpdatedPayment(processor.Processor, status);
-
-                        await _paymentRepository.UpdateEntityAsync(payment, stoppingToken);
-                    }
-                    catch (Exception ex)
+                    foreach (var payment in payments)
                     {
-                        _logger.LogError(ex, "Erro ao reprocessar pagamento {CorrelationId}", payment.CorrelationId);
+
+                        var defaultAvailable = await _healthService.IsProcessorAvailableAsync(ProcessorType.Default, stoppingToken);
+                        var fallbackAvailable = await _healthService.IsProcessorAvailableAsync(ProcessorType.Fallback, stoppingToken);
+
+                        IPaymentProcessorApi? processor = null;
+
+                        if (defaultAvailable)
+                            processor = _defaultProcessor;
+                        else if (fallbackAvailable)
+                            processor = _fallbackProcessor;
+
+                        if (processor is null)
+                        {
+                            _logger.LogWarning("Nenhum processador disponível para reprocessar {CorrelationId}. Tentaremos novamente depois.", payment.CorrelationId);
+                            continue;
+                        }
+
+                        try
+                        {
+                            var success = await processor.ProcessAsync(payment, stoppingToken);
+                            var status = success ? StatusPayment.Approved : StatusPayment.Failed;
+
+                            payment.SetUpdatedPayment(processor.Processor, status);
+
+                            await _paymentRepository.UpdateEntityAsync(payment, stoppingToken);
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, "Erro ao reprocessar pagamento {CorrelationId}", payment.CorrelationId);
+                        }
                     }
+
+                    await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
                 }
-
-                await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex,"Erro ao executar o serviço de reprocessamento de pagamentos.");
+                }
             }
         }
     }

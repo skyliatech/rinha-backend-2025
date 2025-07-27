@@ -15,7 +15,8 @@ namespace PaymentGateway.Common.MessageBroker.Subscriber
             _connection = new ConnectionFactory().CreateConnection(opts);
         }
 
-        public void Subscribe<T>(string subject, Func<T, Task> onMessage)
+        
+        public void SubscribeAsync<T>(string subject, Func<T, Task> onMessage)
         {
             _connection.SubscribeAsync(subject, async (sender, args) =>
             {
@@ -33,6 +34,40 @@ namespace PaymentGateway.Common.MessageBroker.Subscriber
                 }
             });
         }
+
+        
+        public void SubscribeSync<T>(string subject, Action<T> onMessage, CancellationToken cancellationToken)
+        {
+            var subscription = _connection.SubscribeSync(subject);
+
+            Task.Run(() =>
+            {
+                while (!cancellationToken.IsCancellationRequested)
+                {
+                    try
+                    {
+                        var msg = subscription.NextMessage();
+                        var message = JsonSerializer.Deserialize<T>(msg.Data);
+                        if (message is not null)
+                        {
+                            onMessage(message);
+                        }
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        Console.WriteLine("Cancelamento solicitado. Encerrando assinatura síncrona.");
+                        break;
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Erro ao processar mensagem do NATS (sync): {ex.Message}");
+                    }
+                }
+
+                subscription.Unsubscribe(); // Importante: cancela a assinatura no NATS
+            }, cancellationToken);
+        }
+
 
         public void Dispose()
         {

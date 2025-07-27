@@ -16,6 +16,11 @@ namespace PaymentGatewayApi.Services
             _natsPublisher = natsPublisher;
         }
 
+        public async Task DeleteAllAsync()
+        {
+            await _paymentRepository.DeleteAllAsync();
+        }
+
         public async Task<PaymentsSummaryResponse> GetPaymentsSummaryAsync(DateTime? from, DateTime? to)
         {
             var response =  await _paymentRepository.GetSummaryAsync(from, to);

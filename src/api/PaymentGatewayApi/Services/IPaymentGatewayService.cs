@@ -5,6 +5,7 @@ namespace PaymentGatewayApi.Services
 {
     public interface IPaymentGatewayService
     {
+        Task DeleteAllAsync();
         Task<PaymentsSummaryResponse> GetPaymentsSummaryAsync(DateTime? from, DateTime? to);
         Task<bool> SendPaymentAsync(PaymentRequest paymentRequest);
     }
